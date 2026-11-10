@@ -182,7 +182,8 @@ class BridgeService : Service() {
         if (!btAdapter.isEnabled) throw IOException("Bluetooth ist aus")
         val geraet = btAdapter.getRemoteDevice(adresse)
         setzeStatus("Verbinde mit ${geraet.name ?: adresse} …")
-        btAdapter.cancelDiscovery()
+        // Braucht ab Android 12 die Scan-Berechtigung; ohne läuft die Verbindung trotzdem.
+        try { btAdapter.cancelDiscovery() } catch (_: SecurityException) {}
         val socket = try {
             geraet.createRfcommSocketToServiceRecord(SPP_UUID).also { it.connect() }
         } catch (e: IOException) {
