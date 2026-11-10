@@ -163,7 +163,8 @@ class JarvisService : Service() {
     private fun abfragen(obd: ObdClient) {
         val pids = obd.unterstuetzt
         var hatLuftmasse = if (pids.isNotEmpty()) 0x10 in pids else obd.leseModus01("10") != null
-        val hatDruck = pids.isEmpty() || 0x0B in pids
+        var hatDruck = pids.isEmpty() || 0x0B in pids
+        var druckFehler = 0
         fun quelle() = when {
             hatLuftmasse -> "Luftmasse"
             hatDruck -> "Saugrohrdruck"
@@ -187,18 +188,24 @@ class JarvisService : Service() {
             var lh: Double? = null
             if (hatLuftmasse) {
                 val gProS = obd.leseModus01("10")?.takeIf { it.size >= 2 }?.let { (it[0] * 256 + it[1]) / 100.0 }
-                if (gProS != null && gProS <= 0.0 && f.motorLaeuft && hatDruck) {
-                    // Liefert bei laufendem Motor 0: kein echter Luftmassenmesser, also über den Druck rechnen.
+                if (gProS == null || (gProS <= 0.0 && f.motorLaeuft)) {
+                    // Keine Antwort oder 0 bei laufendem Motor: kein echter Luftmassenmesser, also über den Druck rechnen.
                     hatLuftmasse = false
                     setzeStatus("Verbunden · Verbrauch über ${quelle()}")
                 } else {
-                    lh = gProS?.let { verbrauch.ausLuftmasse(it) }
+                    lh = verbrauch.ausLuftmasse(gProS)
                 }
             }
             if (!hatLuftmasse && hatDruck) {
                 val kPa = obd.leseModus01("0B")?.getOrNull(0)
                 val n = f.drehzahl
-                if (kPa != null && n != null) lh = verbrauch.ausSaugrohrdruck(kPa, n, luftC)
+                if (kPa != null && n != null) {
+                    lh = verbrauch.ausSaugrohrdruck(kPa, n, luftC)
+                    druckFehler = 0
+                } else if (kPa == null && ++druckFehler >= 3) {
+                    hatDruck = false
+                    setzeStatus("Verbunden · Verbrauch über ${quelle()}")
+                }
             }
             val jetzt = System.currentTimeMillis()
             if (lh != null) {

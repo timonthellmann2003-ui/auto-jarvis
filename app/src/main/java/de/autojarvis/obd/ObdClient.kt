@@ -73,12 +73,12 @@ class ObdClient(private val socketFactory: SocketFactory = SocketFactory.getDefa
             val b = try {
                 e.read()
             } catch (_: SocketTimeoutException) {
-                throw IOException("Zeitüberschreitung bei $befehl")
+                throw Zeitueberschreitung(befehl)
             }
             if (b < 0) throw IOException("Verbindung beendet")
             if (b == '>'.code) break
             sb.append(b.toChar())
-            if (System.currentTimeMillis() - start > timeoutMs) throw IOException("Zeitüberschreitung bei $befehl")
+            if (System.currentTimeMillis() - start > timeoutMs) throw Zeitueberschreitung(befehl)
         }
         return sb.toString()
             .replace("SEARCHING...", "")
@@ -91,13 +91,33 @@ class ObdClient(private val socketFactory: SocketFactory = SocketFactory.getDefa
 
     /** Liest einen Modus-01-Wert und gibt die Datenbytes zurück, oder null wenn nicht unterstützt. */
     fun leseModus01(pid: String): IntArray? {
-        val antwort = sende("01$pid")
+        val antwort = try {
+            sende("01$pid")
+        } catch (_: Zeitueberschreitung) {
+            // Steuergerät hängt bei dieser PID: Rest der Antwort abwarten, Verbindung behalten.
+            leereBisPrompt()
+            return null
+        }
         val kopf = "41$pid"
         for (zeile in antwort.split('\r', '\n')) {
             val i = zeile.indexOf(kopf)
             if (i >= 0) return hexBytes(zeile.substring(i + kopf.length))
         }
         return null
+    }
+
+    /** Liest alles bis zum nächsten ">"-Prompt weg, damit die nächste Antwort wieder passt. */
+    private fun leereBisPrompt() {
+        val s = socket ?: return
+        val e = ein ?: return
+        try {
+            s.soTimeout = 5000
+            while (true) {
+                val b = e.read()
+                if (b < 0 || b == '>'.code) return
+            }
+        } catch (_: IOException) {
+        }
     }
 
     /** Batteriespannung, wie der Adapter sie an der OBD-Buchse misst. */
@@ -110,6 +130,8 @@ class ObdClient(private val socketFactory: SocketFactory = SocketFactory.getDefa
     fun leseFehlercodes(): List<String> = Dtc.parse(sende("03", 8000))
 
     fun loescheFehlercodes(): Boolean = sende("04", 8000).contains("44")
+
+    class Zeitueberschreitung(befehl: String) : IOException("Zeitüberschreitung bei $befehl")
 
     companion object {
         fun hexBytes(hex: String): IntArray {

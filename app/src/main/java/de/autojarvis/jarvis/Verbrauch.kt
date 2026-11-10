@@ -15,8 +15,8 @@ class Verbrauch(private val c: Context) {
 
     private var fahrtLiter = 0.0
     private var fahrtKm = 0.0
-    private var gesamtLiter = prefs.getFloat("gesamt_liter", 0f).toDouble()
-    private var gesamtKm = prefs.getFloat("gesamt_km", 0f).toDouble()
+    private var gesamtLiter = prefs.getFloat("gesamt_liter_v2", 0f).toDouble()
+    private var gesamtKm = prefs.getFloat("gesamt_km_v2", 0f).toDouble()
     private var letzteSpeicherung = System.currentTimeMillis()
 
     val hubraumCcm: Int get() = prefs.getInt("hubraum", 1198)
@@ -52,7 +52,7 @@ class Verbrauch(private val c: Context) {
 
     fun speichere() {
         letzteSpeicherung = System.currentTimeMillis()
-        prefs.edit().putFloat("gesamt_liter", gesamtLiter.toFloat()).putFloat("gesamt_km", gesamtKm.toFloat()).apply()
+        prefs.edit().putFloat("gesamt_liter_v2", gesamtLiter.toFloat()).putFloat("gesamt_km_v2", gesamtKm.toFloat()).apply()
     }
 
     fun setzeGesamtZurueck() {
