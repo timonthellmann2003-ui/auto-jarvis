@@ -36,10 +36,21 @@ object Sprache {
                 Antwort.Text(f.drehzahl?.let { "$it Umdrehungen." } ?: "Drehzahl unbekannt.")
             q.contains("schnell") || q.contains("tempo") || q.contains("geschwindigkeit") ->
                 Antwort.Text(f.tempoKmh?.let { "$it Kilometer pro Stunde." } ?: "Tempo unbekannt.")
+            q.contains("verbrauch") || q.contains("sprit") || q.contains("liter") ->
+                Antwort.Text(verbrauchSatz(f))
             q.contains("status") || q.contains("alles") || q.contains("check") || q.contains("zustand") ->
                 Antwort.Text(begruessung(f))
             else -> Antwort.Text("Das kann ich noch nicht.")
         }
+    }
+
+    private fun verbrauchSatz(f: Fahrzeug): String {
+        val teile = mutableListOf<String>()
+        f.verbrauchAktuell?.let { teile += "Aktuell ${Fahrzeug.komma(it)} Liter auf 100." }
+            ?: f.verbrauchLh?.let { teile += "Im Stand ${Fahrzeug.komma(it)} Liter pro Stunde." }
+        f.schnittFahrt?.let { teile += "Diese Fahrt ${Fahrzeug.komma(it)}." }
+        f.schnittGesamt?.let { teile += "Gesamt ${Fahrzeug.komma(it)}." }
+        return if (teile.isEmpty()) "Verbrauch noch unbekannt." else teile.joinToString(" ")
     }
 
     sealed class Antwort {

@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import de.autojarvis.Einstellungen
+import de.autojarvis.Entdeckung
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -68,6 +69,7 @@ class BridgeService : Service() {
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "autojarvis:bruecke")
                 .apply { acquire() }
             thread(name = "bruecke-server") { serverSchleife() }
+            thread(name = "bruecke-ruf") { rufSchleife() }
         }
         return START_STICKY
     }
@@ -80,6 +82,18 @@ class BridgeService : Service() {
         schliesseBt()
         wakeLock?.let { if (it.isHeld) it.release() }
         super.onDestroy()
+    }
+
+    /** Ruft alle 2 Sekunden ins WLAN, damit das Radio das Handy findet. */
+    private fun rufSchleife() {
+        try {
+            Entdeckung.sendeSocket().use { socket ->
+                while (aktiv) {
+                    Entdeckung.rufe(socket)
+                    Thread.sleep(2000)
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     private fun serverSchleife() {
