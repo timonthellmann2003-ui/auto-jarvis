@@ -211,7 +211,12 @@ class JarvisService : Service() {
             val jetzt = System.currentTimeMillis()
             if (lh != null) {
                 val (fahrt, gesamt) = verbrauch.addiere(lh, f.tempoKmh ?: 0, (jetzt - letzteZeit) / 1000.0)
-                f = f.copy(verbrauchLh = lh, schnittFahrt = fahrt, schnittGesamt = gesamt)
+                val preis = verbrauch.preis
+                f = f.copy(
+                    verbrauchLh = lh, schnittFahrt = fahrt, schnittGesamt = gesamt,
+                    fahrtLiter = verbrauch.fahrtLiter, fahrtEuro = verbrauch.fahrtLiter * preis,
+                    euroPro100 = (gesamt ?: fahrt)?.let { it * preis },
+                )
             }
             letzteZeit = jetzt
 

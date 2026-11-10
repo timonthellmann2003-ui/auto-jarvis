@@ -13,7 +13,8 @@ class Verbrauch(private val c: Context) {
 
     private val prefs = c.getSharedPreferences("auto_jarvis", Context.MODE_PRIVATE)
 
-    private var fahrtLiter = 0.0
+    var fahrtLiter = 0.0
+        private set
     private var fahrtKm = 0.0
     private var gesamtLiter = prefs.getFloat("gesamt_liter_v2", 0f).toDouble()
     private var gesamtKm = prefs.getFloat("gesamt_km_v2", 0f).toDouble()
@@ -21,6 +22,8 @@ class Verbrauch(private val c: Context) {
 
     val hubraumCcm: Int get() = prefs.getInt("hubraum", 1198)
     val korrektur: Double get() = prefs.getFloat("korrektur", 1f).toDouble()
+    /** Spritpreis in Euro pro Liter, in den Einstellungen änderbar. */
+    val preis: Double get() = prefs.getFloat("preis", 1.79f).toDouble()
 
     /** Liter pro Stunde aus der Luftmasse (g/s). */
     fun ausLuftmasse(gProS: Double): Double = gProS / 14.7 * 3600 / 745 * korrektur

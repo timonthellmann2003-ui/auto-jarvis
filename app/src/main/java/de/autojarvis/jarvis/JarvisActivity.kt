@@ -38,6 +38,7 @@ class JarvisActivity : Activity() {
     private lateinit var verbrauchJetzt: Ui.Kachel
     private lateinit var schnittFahrt: Ui.Kachel
     private lateinit var schnittGesamt: Ui.Kachel
+    private lateinit var kosten: Ui.Kachel
     private lateinit var statusText: TextView
     private lateinit var leisteKnopf: View
 
@@ -76,12 +77,13 @@ class JarvisActivity : Activity() {
         verbrauchJetzt = ui.Kachel("Verbrauch jetzt")
         schnittFahrt = ui.Kachel("Ø diese Fahrt")
         schnittGesamt = ui.Kachel("Ø gesamt")
+        kosten = ui.Kachel("Kosten Fahrt")
         fun reihe(vararg kacheln: Ui.Kachel) = ui.zeile().apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
             kacheln.forEach { addView(it.ansicht) }
         }
         layout.addView(reihe(tempo, drehzahl, kuehlwasser, batterie))
-        layout.addView(reihe(verbrauchJetzt, schnittFahrt, schnittGesamt))
+        layout.addView(reihe(verbrauchJetzt, schnittFahrt, schnittGesamt, kosten))
 
         fun knopf(text: String, farbe: Int, aktion: () -> Unit) =
             ui.knopf(text, farbe, aktion).apply {
@@ -138,6 +140,7 @@ class JarvisActivity : Activity() {
         verbrauchJetzt.zeige(f.verbrauchText() ?: "–")
         schnittFahrt.zeige(f.schnittFahrt?.let { Fahrzeug.komma(it) } ?: "–")
         schnittGesamt.zeige(f.schnittGesamt?.let { Fahrzeug.komma(it) } ?: "–")
+        kosten.zeige(f.fahrtEuro?.let { "${Fahrzeug.euro(it)} €" } ?: "–")
     }
 
     // ---------- Sprechen ----------
@@ -188,6 +191,11 @@ class JarvisActivity : Activity() {
         }
         val ip = feld("IP des Handys (leer = automatisch)", Einstellungen.brueckeIp(this), InputType.TYPE_CLASS_TEXT)
         val hubraum = feld("Hubraum in cm³ (Fahrzeugschein P.1)", prefs.getInt("hubraum", 1198).toString(), InputType.TYPE_CLASS_NUMBER)
+        val preis = feld(
+            "Spritpreis in €/Liter",
+            Fahrzeug.euro(prefs.getFloat("preis", 1.79f).toDouble()),
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        )
         val korrektur = feld(
             "Verbrauch-Korrektur in % (100 = keine)",
             Math.round(prefs.getFloat("korrektur", 1f) * 100).toString(),
@@ -202,6 +210,7 @@ class JarvisActivity : Activity() {
                 prefs.edit()
                     .putInt("hubraum", hubraum.text.toString().toIntOrNull() ?: 1198)
                     .putFloat("korrektur", (korrektur.text.toString().toIntOrNull() ?: 100) / 100f)
+                    .putFloat("preis", preis.text.toString().replace(',', '.').toFloatOrNull() ?: 1.79f)
                     .apply()
             }
             .setNeutralButton("Mehr …") { _, _ -> zeigeMehr() }

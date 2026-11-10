@@ -11,6 +11,11 @@ data class Fahrzeug(
     val verbrauchLh: Double? = null,
     val schnittFahrt: Double? = null,
     val schnittGesamt: Double? = null,
+    /** Verbrauchte Liter und Kosten dieser Fahrt. */
+    val fahrtLiter: Double? = null,
+    val fahrtEuro: Double? = null,
+    /** Euro pro 100 km aus dem Gesamt-Durchschnitt. */
+    val euroPro100: Double? = null,
 ) {
     val motorLaeuft: Boolean get() = (drehzahl ?: 0) > 400
 
@@ -30,5 +35,6 @@ data class Fahrzeug(
 
     companion object {
         fun komma(x: Double): String = String.format("%.1f", x).replace('.', ',')
+        fun euro(x: Double): String = String.format("%.2f", x).replace('.', ',')
     }
 }
