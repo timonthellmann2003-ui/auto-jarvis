@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.provider.Settings
@@ -34,25 +33,43 @@ class Leiste(
     private val wm = c.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val prefs = c.getSharedPreferences("auto_jarvis", Context.MODE_PRIVATE)
 
+    private val normal = Color.argb(225, 6, 6, 8)
     private val hintergrund = GradientDrawable().apply {
-        setColor(Color.argb(220, 12, 14, 18))
-        cornerRadius = ui.dp(20).toFloat()
+        setColor(normal)
+        cornerRadius = ui.dp(4).toFloat()
+        setStroke(ui.dp(2), Ui.AKZENT)
+    }
+
+    /** Tempo groß vorne, wie ein Tacho. */
+    private val tempo = TextView(c).apply {
+        textSize = 28f
+        setTextColor(Ui.TEXT)
+        typeface = Ui.SPORT
+        text = "–"
+    }
+
+    private val einheit = TextView(c).apply {
+        textSize = 12f
+        setTextColor(Ui.AKZENT)
+        typeface = Ui.SPORT_SCHMAL
+        text = "KM/H"
+        setPadding(ui.dp(4), 0, ui.dp(12), 0)
     }
 
     private val werte = TextView(c).apply {
-        textSize = 18f
+        textSize = 17f
         setTextColor(Ui.TEXT)
-        typeface = Typeface.DEFAULT_BOLD
-        text = "Jarvis …"
+        typeface = Ui.SPORT
+        text = "JARVIS …"
     }
 
     private val vorlesen = TextView(c).apply {
         textSize = 18f
         setTextColor(Color.WHITE)
-        typeface = Typeface.DEFAULT_BOLD
+        typeface = Ui.SPORT
         background = GradientDrawable().apply {
-            setColor(Ui.WARNUNG)
-            cornerRadius = ui.dp(14).toFloat()
+            setColor(Ui.AKZENT)
+            cornerRadius = ui.dp(4).toFloat()
         }
         setPadding(ui.dp(12), ui.dp(6), ui.dp(12), ui.dp(6))
         visibility = View.GONE
@@ -72,7 +89,9 @@ class Leiste(
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         background = hintergrund
-        setPadding(ui.dp(14), ui.dp(6), ui.dp(14), ui.dp(6))
+        setPadding(ui.dp(12), ui.dp(4), ui.dp(14), ui.dp(4))
+        addView(tempo)
+        addView(einheit)
         addView(werte)
         addView(vorlesen, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
@@ -99,6 +118,7 @@ class Leiste(
     }
 
     fun zeige(f: Fahrzeug, offeneFehler: Int) {
+        tempo.text = f.tempoKmh?.toString() ?: "–"
         val teile = mutableListOf<String>()
         teile += f.kuehlwasserC?.let { "$it °C" } ?: "– °C"
         teile += f.spannungText()?.let { "$it V" } ?: "– V"
@@ -107,10 +127,10 @@ class Leiste(
         werte.text = teile.joinToString("  ·  ")
 
         val warnung = (f.kuehlwasserC ?: 0) >= JarvisService.MOTOR_HEISS || JarvisService.spannungWarnung(f)
-        hintergrund.setColor(if (warnung) Color.argb(230, 180, 30, 20) else Color.argb(220, 12, 14, 18))
+        hintergrund.setColor(if (warnung) Ui.WARNUNG else normal)
 
         if (offeneFehler > 0) {
-            vorlesen.text = if (offeneFehler == 1) "1 Fehler · Vorlesen" else "$offeneFehler Fehler · Vorlesen"
+            vorlesen.text = if (offeneFehler == 1) "1 FEHLER · VORLESEN" else "$offeneFehler FEHLER · VORLESEN"
             vorlesen.visibility = View.VISIBLE
             schliessen.visibility = View.VISIBLE
         } else {
@@ -120,7 +140,7 @@ class Leiste(
     }
 
     fun zeigeStatus(text: String) {
-        if (!text.startsWith("Verbunden")) werte.text = "Jarvis: $text"
+        if (!text.startsWith("Verbunden")) werte.text = "JARVIS: $text"
     }
 
     fun entferne() {
@@ -133,7 +153,7 @@ class Leiste(
         var startY = 0
         var fingerX = 0f
         var fingerY = 0f
-        werte.setOnTouchListener { _, e ->
+        val ziehen = View.OnTouchListener { _, e ->
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startX = params.x; startY = params.y
@@ -153,5 +173,8 @@ class Leiste(
                 else -> false
             }
         }
+        tempo.setOnTouchListener(ziehen)
+        einheit.setOnTouchListener(ziehen)
+        werte.setOnTouchListener(ziehen)
     }
 }

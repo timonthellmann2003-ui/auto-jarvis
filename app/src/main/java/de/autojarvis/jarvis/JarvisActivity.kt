@@ -56,8 +56,18 @@ class JarvisActivity : Activity() {
         ui = Ui(this)
 
         val layout = ui.spalte()
-        statusText = ui.text("", 16f).apply { setTextColor(Ui.GEDAEMPFT) }
-        layout.addView(statusText)
+        val kopf = ui.zeile().apply { gravity = android.view.Gravity.CENTER_VERTICAL }
+        kopf.addView(TextView(this).apply {
+            text = "JARVIS"
+            textSize = 22f
+            typeface = Ui.SPORT
+            setTextColor(Ui.AKZENT)
+            letterSpacing = 0.1f
+            setPadding(ui.dp(4), 0, ui.dp(16), 0)
+        })
+        statusText = ui.text("", 14f).apply { setTextColor(Ui.GEDAEMPFT); typeface = Ui.SPORT_SCHMAL }
+        kopf.addView(statusText)
+        layout.addView(kopf)
 
         tempo = ui.Kachel("Tempo km/h")
         drehzahl = ui.Kachel("Drehzahl")
@@ -199,12 +209,29 @@ class JarvisActivity : Activity() {
             .show()
     }
 
+    private fun waehleStimme() {
+        val jarvis = JarvisService.instanz ?: return
+        val stimmen = jarvis.stimmen()
+        if (stimmen.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setMessage("Keine deutsche Offline-Stimme gefunden. Bitte in den Android-Einstellungen unter Text-in-Sprache die deutschen Sprachdaten herunterladen.")
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Stimme wählen (antippen zum Anhören)")
+            .setItems(stimmen.toTypedArray()) { _, i -> jarvis.setzeStimme(stimmen[i]) }
+            .show()
+    }
+
     private fun zeigeMehr() {
         AlertDialog.Builder(this)
-            .setItems(arrayOf("Ø-Verbrauch gesamt zurücksetzen", "Gerätemodus ändern")) { _, i ->
+            .setItems(arrayOf("Stimme wählen", "Ø-Verbrauch gesamt zurücksetzen", "Gerätemodus ändern")) { _, i ->
                 when (i) {
-                    0 -> JarvisService.instanz?.verbrauch?.setzeGesamtZurueck()
-                    1 -> {
+                    0 -> waehleStimme()
+                    1 -> JarvisService.instanz?.verbrauch?.setzeGesamtZurueck()
+                    2 -> {
                         stopService(Intent(this, JarvisService::class.java))
                         Einstellungen.setzeModus(this, null)
                         startActivity(Intent(this, MainActivity::class.java))

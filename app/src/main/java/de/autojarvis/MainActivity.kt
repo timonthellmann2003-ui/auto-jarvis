@@ -23,6 +23,7 @@ class MainActivity : Activity() {
         val ui = Ui(this)
         val layout = ui.spalte()
         layout.addView(ui.titel("Auto Jarvis"))
+        layout.addView(ui.strich())
         layout.addView(ui.text("Was ist dieses Gerät?"))
         layout.addView(ui.knopf("Handy: Brücke zum OBD-Adapter") {
             Einstellungen.setzeModus(this, Einstellungen.MODUS_BRUECKE)

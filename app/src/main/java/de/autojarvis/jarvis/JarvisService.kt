@@ -93,6 +93,7 @@ class JarvisService : Service() {
         tts = TextToSpeech(this) { s ->
             if (s == TextToSpeech.SUCCESS) {
                 tts?.setLanguage(Locale.GERMAN)
+                waehleStimme()
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(id: String?) {}
                     override fun onDone(id: String?) {
@@ -336,6 +337,38 @@ class JarvisService : Service() {
         }
         nachAnsage = danach
         tts?.speak(text, TextToSpeech.QUEUE_ADD, null, text.hashCode().toString())
+    }
+
+    /** Deutsche Stimmen, die ohne Internet funktionieren. */
+    fun stimmen(): List<String> = try {
+        tts?.voices.orEmpty()
+            .filter { it.locale.language == "de" && !it.isNetworkConnectionRequired }
+            .map { it.name }
+            .sorted()
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    fun setzeStimme(name: String) {
+        getSharedPreferences("auto_jarvis", Context.MODE_PRIVATE).edit().putString("stimme", name).apply()
+        waehleStimme()
+        sage("Jarvis bereit.")
+    }
+
+    /**
+     * Männliche Stimme: gespeicherte Wahl, sonst eine bekannte männliche Google-Stimme (deb, deg),
+     * dazu etwas tiefer gestellt.
+     */
+    private fun waehleStimme() {
+        val t = tts ?: return
+        val gewaehlt = getSharedPreferences("auto_jarvis", Context.MODE_PRIVATE).getString("stimme", null)
+        try {
+            val deutsch = t.voices.orEmpty().filter { it.locale.language == "de" && !it.isNetworkConnectionRequired }
+            val stimme = deutsch.firstOrNull { it.name == gewaehlt }
+                ?: listOf("deb", "deg", "male").firstNotNullOfOrNull { m -> deutsch.firstOrNull { it.name.contains(m, true) } }
+            if (stimme != null) t.setVoice(stimme)
+        } catch (_: Exception) {}
+        t.setPitch(0.85f)
     }
 
     /** Hört kurz zu, ob "Ja" gesagt wird. Klappt das nicht, bleibt der Knopf "Vorlesen" in der Leiste. */

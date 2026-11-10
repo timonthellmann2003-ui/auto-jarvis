@@ -35,6 +35,7 @@ class BridgeActivity : Activity() {
         val ui = Ui(this)
         val layout = ui.spalte()
         layout.addView(ui.titel("Brücke (Handy)"))
+        layout.addView(ui.strich())
         layout.addView(ui.text("Das Handy verbindet sich per Bluetooth mit dem OBD-Adapter und reicht die Daten per Hotspot an das Radio weiter.", 16f))
         adapterText = ui.text("")
         layout.addView(adapterText)
