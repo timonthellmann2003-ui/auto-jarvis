@@ -107,9 +107,10 @@ class Leiste(
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
         PixelFormat.TRANSLUCENT
     ).apply {
-        gravity = Gravity.TOP or Gravity.START
-        x = prefs.getInt("leiste_x", ui.dp(8))
-        y = prefs.getInt("leiste_y", ui.dp(8))
+        // Standard: oben rechts. x zählt hier vom rechten Rand.
+        gravity = Gravity.TOP or Gravity.END
+        x = prefs.getInt("leiste_rechts_x", ui.dp(8))
+        y = prefs.getInt("leiste_rechts_y", ui.dp(8))
     }
 
     init {
@@ -161,13 +162,13 @@ class Leiste(
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = startX + (e.rawX - fingerX).toInt()
+                    params.x = startX - (e.rawX - fingerX).toInt()
                     params.y = startY + (e.rawY - fingerY).toInt()
                     wm.updateViewLayout(ansicht, params)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    prefs.edit().putInt("leiste_x", params.x).putInt("leiste_y", params.y).apply()
+                    prefs.edit().putInt("leiste_rechts_x", params.x).putInt("leiste_rechts_y", params.y).apply()
                     true
                 }
                 else -> false
