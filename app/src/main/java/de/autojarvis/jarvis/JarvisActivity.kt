@@ -38,7 +38,6 @@ class JarvisActivity : Activity() {
     private lateinit var verbrauchJetzt: Ui.Kachel
     private lateinit var schnittFahrt: Ui.Kachel
     private lateinit var schnittGesamt: Ui.Kachel
-    private lateinit var kosten: Ui.Kachel
     private lateinit var statusText: TextView
     private lateinit var leisteKnopf: View
 
@@ -77,13 +76,12 @@ class JarvisActivity : Activity() {
         verbrauchJetzt = ui.Kachel("Verbrauch jetzt")
         schnittFahrt = ui.Kachel("Ø diese Fahrt")
         schnittGesamt = ui.Kachel("Ø gesamt")
-        kosten = ui.Kachel("Kosten Fahrt")
         fun reihe(vararg kacheln: Ui.Kachel) = ui.zeile().apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
             kacheln.forEach { addView(it.ansicht) }
         }
         layout.addView(reihe(tempo, drehzahl, kuehlwasser, batterie))
-        layout.addView(reihe(verbrauchJetzt, schnittFahrt, schnittGesamt, kosten))
+        layout.addView(reihe(verbrauchJetzt, schnittFahrt, schnittGesamt))
 
         fun knopf(text: String, farbe: Int, aktion: () -> Unit) =
             ui.knopf(text, farbe, aktion).apply {
@@ -94,6 +92,7 @@ class JarvisActivity : Activity() {
         val knoepfe = ui.zeile()
         knoepfe.addView(knopf("🎤 Sprechen", Ui.AKZENT) { hoereZu() })
         knoepfe.addView(knopf("Fehler prüfen", Ui.KACHEL) { JarvisService.instanz?.pruefeFehler() })
+        knoepfe.addView(knopf("Kosten", Ui.KACHEL) { zeigeKosten() })
         leisteKnopf = knopf("Leiste erlauben", Ui.WARNUNG) { erlaubeLeiste() }
         knoepfe.addView(leisteKnopf)
         knoepfe.addView(knopf("Einstellungen", Ui.KACHEL) { zeigeEinstellungen() })
@@ -120,6 +119,22 @@ class JarvisActivity : Activity() {
         super.onPause()
     }
 
+    /** Kosten nur auf Abruf: kurz anzeigen und ansagen. */
+    private fun zeigeKosten() {
+        val f = JarvisService.fahrzeug
+        val text = Sprache.kostenSatz(f)
+        JarvisService.instanz?.sage(text)
+        AlertDialog.Builder(this)
+            .setTitle("Kosten")
+            .setMessage(
+                "Diese Fahrt: ${f.fahrtEuro?.let { Fahrzeug.euro(it) + " €" } ?: "–"}" +
+                    "\nLiter: ${f.fahrtLiter?.let { Fahrzeug.komma(it) } ?: "–"}" +
+                    "\nPro 100 km: ${f.euroPro100?.let { Fahrzeug.euro(it) + " €" } ?: "–"}"
+            )
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
     private fun erlaubeLeiste() {
         if (Build.VERSION.SDK_INT < 23) return
         try {
@@ -140,7 +155,6 @@ class JarvisActivity : Activity() {
         verbrauchJetzt.zeige(f.verbrauchText() ?: "–")
         schnittFahrt.zeige(f.schnittFahrt?.let { Fahrzeug.komma(it) } ?: "–")
         schnittGesamt.zeige(f.schnittGesamt?.let { Fahrzeug.komma(it) } ?: "–")
-        kosten.zeige(f.fahrtEuro?.let { "${Fahrzeug.euro(it)} €" } ?: "–")
     }
 
     // ---------- Sprechen ----------

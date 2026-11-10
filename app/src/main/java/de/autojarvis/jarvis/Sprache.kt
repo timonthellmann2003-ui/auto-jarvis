@@ -46,7 +46,7 @@ object Sprache {
         }
     }
 
-    private fun kostenSatz(f: Fahrzeug): String {
+    fun kostenSatz(f: Fahrzeug): String {
         val teile = mutableListOf<String>()
         f.fahrtEuro?.let { e ->
             teile += "Diese Fahrt ${Fahrzeug.euro(e)} Euro, ${Fahrzeug.komma(f.fahrtLiter ?: 0.0)} Liter."
