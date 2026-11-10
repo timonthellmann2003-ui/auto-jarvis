@@ -22,6 +22,7 @@ class Ui(private val c: Context) {
         val GEDAEMPFT = Color.rgb(150, 150, 158)
         val AKZENT = Color.rgb(228, 24, 36)
         val WARNUNG = Color.rgb(200, 16, 24)
+        val BLAU = Color.rgb(30, 170, 255)
 
         /** Schmale, kursive Schrift wie auf Rennsport-Anzeigen. */
         val SPORT: Typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD_ITALIC)
@@ -108,7 +109,7 @@ class Ui(private val c: Context) {
                 textSize = 13f
                 letterSpacing = 0.12f
                 typeface = SPORT_SCHMAL
-                setTextColor(GEDAEMPFT)
+                setTextColor(BLAU)
                 gravity = Gravity.CENTER
                 setPadding(dp(6), dp(8), dp(6), 0)
             })
