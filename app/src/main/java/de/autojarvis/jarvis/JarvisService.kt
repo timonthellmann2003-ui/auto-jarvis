@@ -161,7 +161,15 @@ class JarvisService : Service() {
 
     /** Fragt die Werte reihum ab. K-Line ist langsam, darum Tempo/Drehzahl/Druck oft, den Rest seltener. */
     private fun abfragen(obd: ObdClient) {
-        val hatLuftmasse = obd.leseModus01("10") != null
+        val pids = obd.unterstuetzt
+        var hatLuftmasse = if (pids.isNotEmpty()) 0x10 in pids else obd.leseModus01("10") != null
+        val hatDruck = pids.isEmpty() || 0x0B in pids
+        fun quelle() = when {
+            hatLuftmasse -> "Luftmasse"
+            hatDruck -> "Saugrohrdruck"
+            else -> "nicht verfügbar"
+        }
+        setzeStatus("Verbunden · Verbrauch über ${quelle()}")
         var luftC = 20
         var letzteZeit = System.currentTimeMillis()
         var runde = 0
@@ -176,12 +184,21 @@ class JarvisService : Service() {
             }
 
             // Verbrauch
-            val lh: Double? = if (hatLuftmasse) {
-                obd.leseModus01("10")?.takeIf { it.size >= 2 }?.let { verbrauch.ausLuftmasse((it[0] * 256 + it[1]) / 100.0) }
-            } else {
+            var lh: Double? = null
+            if (hatLuftmasse) {
+                val gProS = obd.leseModus01("10")?.takeIf { it.size >= 2 }?.let { (it[0] * 256 + it[1]) / 100.0 }
+                if (gProS != null && gProS <= 0.0 && f.motorLaeuft && hatDruck) {
+                    // Liefert bei laufendem Motor 0: kein echter Luftmassenmesser, also über den Druck rechnen.
+                    hatLuftmasse = false
+                    setzeStatus("Verbunden · Verbrauch über ${quelle()}")
+                } else {
+                    lh = gProS?.let { verbrauch.ausLuftmasse(it) }
+                }
+            }
+            if (!hatLuftmasse && hatDruck) {
                 val kPa = obd.leseModus01("0B")?.getOrNull(0)
                 val n = f.drehzahl
-                if (kPa != null && n != null) verbrauch.ausSaugrohrdruck(kPa, n, luftC) else null
+                if (kPa != null && n != null) lh = verbrauch.ausSaugrohrdruck(kPa, n, luftC)
             }
             val jetzt = System.currentTimeMillis()
             if (lh != null) {

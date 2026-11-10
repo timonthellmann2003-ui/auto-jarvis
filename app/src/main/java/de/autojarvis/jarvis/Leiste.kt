@@ -120,7 +120,7 @@ class Leiste(
     }
 
     fun zeigeStatus(text: String) {
-        if (text != "Verbunden") werte.text = "Jarvis: $text"
+        if (!text.startsWith("Verbunden")) werte.text = "Jarvis: $text"
     }
 
     fun entferne() {

@@ -44,6 +44,19 @@ class ObdClient(private val socketFactory: SocketFactory = SocketFactory.getDefa
         for (befehl in listOf("ATE0", "ATL0", "ATS0", "ATH0", "ATAT1", "ATSP0")) sende(befehl, 3000)
         val antwort = sende("0100", 20000)
         if (!antwort.contains("4100")) throw IOException("Auto antwortet nicht: $antwort")
+        unterstuetzt = unterstuetztePids(antwort)
+    }
+
+    /** PIDs 01–20, die das Motorsteuergerät laut Antwort auf "0100" kennt. Leer = unbekannt. */
+    var unterstuetzt: Set<Int> = emptySet()
+        private set
+
+    private fun unterstuetztePids(antwort: String): Set<Int> {
+        val i = antwort.indexOf("4100")
+        val bytes = hexBytes(antwort.substring(i + 4).take(8))
+        if (bytes.size < 4) return emptySet()
+        val maske = bytes.fold(0L) { acc, b -> (acc shl 8) or b.toLong() }
+        return (1..32).filter { pid -> ((maske shr (32 - pid)) and 1L) == 1L }.toSet()
     }
 
     /** Schickt einen Befehl und liest bis zum ">"-Prompt. Gibt die Antwort ohne Leerzeichen/Prompt zurück. */
